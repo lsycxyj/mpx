@@ -1,3 +1,4 @@
+const babylon = require('babylon')
 const deindent = require('de-indent')
 const he = require('he')
 const config = require('../config')
@@ -1159,6 +1160,35 @@ function processAttrs (el, options) {
     }
     if (parsed.replaced) {
       modifyAttr(el, attr.name, isTemplateData ? attr.value.replace(/\b__mpx_mode__\b/g, stringify(mode)) : parsed.val)
+    }
+
+    if (isTemplateData && mode === 'swan') {
+      const REG_MUSTACHE = /(\{\{((?:.|\n)+?)\}\}(?!}))/
+
+      // 百度对Object Spread的语法需要外面有一层大括号
+      const oAttrValue = attr.value
+
+      const matched = oAttrValue.match(REG_MUSTACHE)
+      if (matched && matched[2]) {
+        const mustacheValue = matched[2]
+        // 只有带spread，原来又没有在最外层加多一层大括号的时候才需要额外处理
+        // 这里处理有点trick，最外层不套大括号的实际是不合法的语法，babylon会parse error
+        let notLegal = false
+
+        try {
+          babylon.parse(`const a = ${mustacheValue}`, {
+            plugins: [
+              'objectRestSpread'
+            ]
+          })
+        } catch (e) {
+          notLegal = true
+        }
+
+        if (notLegal) {
+          modifyAttr(el, attr.name, `{${oAttrValue}}`)
+        }
+      }
     }
   })
 }
