@@ -4,6 +4,8 @@ const normalize = require('./utils/normalize')
 const tryRequire = require('./utils/try-require')
 const styleCompilerPath = normalize.lib('style-compiler/index')
 const templateCompilerPath = normalize.lib('template-compiler/index')
+// const cssLoaderPath = normalize.lib('style-compiler/css-loader/loader')
+const cssLoaderPath = 'css-loader'
 const jsonCompilerPath = normalize.lib('json-compiler/index')
 const templatePreprocessorPath = normalize.lib('template-compiler/preprocessor')
 const wxsLoaderPath = normalize.lib('wxs/wxs-loader')
@@ -88,7 +90,7 @@ function resolveLoaders (options, moduleId, isProduction, hasScoped, hasComment,
 
   function getCSSLoaderString (lang) {
     const langLoader = lang ? ensureBang(ensureLoader(lang)) : ''
-    return ensureBang('css-loader' + cssLoaderOptions) + langLoader
+    return ensureBang(cssLoaderPath + cssLoaderOptions) + langLoader
   }
 
   return {
@@ -237,7 +239,7 @@ module.exports = function createHelpers (loaderContext, options, moduleId, isPro
   function getLoaderString (type, part, index, scoped) {
     let loader = getRawLoaderString(type, part, index, scoped)
     const lang = getLangString(type, part)
-    if (type !== 'script' && type !== 'wxs') {
+    if (!part.noExtract && type !== 'script' && type !== 'wxs') {
       loader = getExtractorString(type, index) + loader
     }
     if (preLoaders[lang]) {
@@ -381,6 +383,7 @@ module.exports = function createHelpers (loaderContext, options, moduleId, isPro
     getImportForSrc,
     getNamedExportsForSrc,
     getRequestString,
-    getSrcRequestString
+    getSrcRequestString,
+    getLoaderString,
   }
 }

@@ -97,6 +97,7 @@ class MpxWebpackPlugin {
       if (!compilation.__mpx__) {
         compilation.__mpx__ = {
           pagesMap: {},
+          additionalAssets,
           componentsMap: {},
           loaderOptions: null,
           subPackagesMap: {},
