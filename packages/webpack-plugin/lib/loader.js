@@ -16,6 +16,7 @@ module.exports = function (content) {
   const pagesMap = mpx.pagesMap
   const componentsMap = mpx.componentsMap
   const projectRoot = mpx.projectRoot
+  const toBeRewriteSrcSet = mpx.toBeRewriteSrcSet
   const mode = mpx.mode
   const globalSrcMode = mpx.srcMode
   const localSrcMode = loaderUtils.parseQuery(this.resourceQuery || '?').mode
@@ -166,10 +167,17 @@ module.exports = function (content) {
   if (parts.styles.length) {
     let styleInjectionCode = ''
     parts.styles.forEach((style, i) => {
+      if (style.src) {
+        const srcPath = path.resolve(path.dirname(filePath), style.src)
+        toBeRewriteSrcSet.add(srcPath)
+      }
       // require style
       let requireString = style.src
         ? getRequireForSrc('styles', style, -1, style.scoped)
         : getRequire('styles', style, i, style.scoped)
+
+      if (style.src) {
+      }
 
       const hasStyleLoader = requireString.indexOf('style-loader') > -1
       const invokeStyle = code => `${code}\n`
