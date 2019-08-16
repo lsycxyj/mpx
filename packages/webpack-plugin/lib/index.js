@@ -94,10 +94,13 @@ class MpxWebpackPlugin {
     compiler.hooks.thisCompilation.tap('MpxWebpackPlugin', (compilation, { normalModuleFactory }) => {
       const typeExtMap = config[this.options.mode].typeExtMap
       const additionalAssets = {}
+      // mpx文件中被src引入的文件，标记会被抽取，供其他loader用（如css-loader）
+      const toBeRewriteSrcSet = new Set()
       if (!compilation.__mpx__) {
         compilation.__mpx__ = {
           pagesMap: {},
           additionalAssets,
+          toBeRewriteSrcSet,
           componentsMap: {},
           loaderOptions: null,
           subPackagesMap: {},
