@@ -176,9 +176,6 @@ module.exports = function (content) {
         ? getRequireForSrc('styles', style, -1, style.scoped)
         : getRequire('styles', style, i, style.scoped)
 
-      if (style.src) {
-      }
-
       const hasStyleLoader = requireString.indexOf('style-loader') > -1
       const invokeStyle = code => `${code}\n`
 
