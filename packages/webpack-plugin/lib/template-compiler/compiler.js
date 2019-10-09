@@ -1962,6 +1962,7 @@ function genNode (node) {
 module.exports = {
   parseComponent,
   parse,
+  parseHTML,
   serialize,
   genNode,
   makeAttrsMap
