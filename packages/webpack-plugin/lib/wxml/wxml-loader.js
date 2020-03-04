@@ -1,4 +1,10 @@
 // const htmlMinifier = require('html-minifier')
+const NodeTemplatePlugin = require('webpack/lib/node/NodeTemplatePlugin')
+const NodeTargetPlugin = require('webpack/lib/node/NodeTargetPlugin')
+const LibraryTemplatePlugin = require('webpack/lib/LibraryTemplatePlugin')
+const SingleEntryPlugin = require('webpack/lib/SingleEntryPlugin')
+const LimitChunkCountPlugin = require('webpack/lib/optimize/LimitChunkCountPlugin')
+
 const attrParse = require('./attributesParser')
 const loaderUtils = require('loader-utils')
 const url = require('url')
@@ -43,6 +49,7 @@ module.exports = function (content) {
   const usingComponents = []
 
   const mainCompilation = getMainCompilation(this._compilation)
+  const mpx = mainCompilation.__mpx__
   const mode = mainCompilation.__mpx__.mode
   const globalSrcMode = mainCompilation.__mpx__.srcMode
   const localSrcMode = loaderUtils.parseQuery(this.resourceQuery || '?').mode
@@ -137,6 +144,9 @@ module.exports = function (content) {
   const exportsString = 'module.exports = '
   const templateRequestSet = new Set()
 
+  const parsedRequest = parseRequest(loaderContext.resource)
+  const parsedQueryObj = parsedRequest.queryObj
+  const originResourcePath = parsedQueryObj.originResourcePath || parsedRequest.resourcePath
   const ret = exportsString + content.replace(/xxxHTMLLINKxxx[0-9.]+xxx/g, function (match) {
     if (!data[match]) return match
 
@@ -149,16 +159,13 @@ module.exports = function (content) {
     switch (link.tag) {
       case 'import':
       case 'include':
-        const parsedRequest = parseRequest(loaderContext.resource)
-        const parsedQueryObj = parsedRequest.queryObj
-        const originResourcePath = parsedQueryObj.originResourcePath || parsedRequest.resourcePath
         const opts = { src, mode: localSrcMode }
         if (originResourcePath) {
           opts.addQuery = { originResourcePath }
         }
         requestString = getSrcRequestString('template', opts, -1)
-        // const rawRequest = requestString.repalce(/^"|"$/g, '')
-        // templateRequestSet.add(rawRequest)
+        const rawRequest = requestString.replace(/^"|"$/g, '')
+        templateRequestSet.add(rawRequest)
         break
       case config[mode].wxs.tag:
         requestString = getSrcRequestString('wxs', { src, mode: localSrcMode }, -1, undefined, '!!')
@@ -170,5 +177,42 @@ module.exports = function (content) {
     return '" + require(' + requestString + ') + "'
   }) + ';'
 
-  callback(null, ret)
+  const promises = []
+  for (const request of templateRequestSet) {
+    promises.push(new Promise((resolve, reject) => {
+      const childFilename = 'precompile-template-filename'
+      const outputOptions = {
+        filename: childFilename
+      }
+      const childCompiler = mainCompilation.createChildCompiler(request, outputOptions, [
+        new NodeTemplatePlugin(outputOptions),
+        new LibraryTemplatePlugin(null, 'commonjs2'),
+        new NodeTargetPlugin(),
+        new SingleEntryPlugin(loaderContext.context, request, 'include.wxml'),
+        new LimitChunkCountPlugin({ maxChunks: 1 })
+      ])
+
+      childCompiler.hooks.afterCompile.tapAsync('MpxWebpackPlugin', (compilation, callback) => {
+        // Remove all chunk assets
+        compilation.chunks.forEach((chunk) => {
+          chunk.files.forEach((file) => {
+            delete compilation.assets[file]
+          })
+        })
+
+        resolve()
+      })
+      childCompiler.runAsChild((err) => {
+        if (err) {
+          reject(err)
+        }
+      })
+    }))
+  }
+
+  Promise.all(promises)
+    .then(() => {
+      // console.log(mpx.usedTagMap)
+      callback(null, ret)
+    })
 }
