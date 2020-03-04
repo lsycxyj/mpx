@@ -149,8 +149,9 @@ module.exports = function (content) {
     switch (link.tag) {
       case 'import':
       case 'include':
-        const parsedRequest = parseRequest(loaderContext.resource).queryObj
-        const originResourcePath = parsedRequest.originResourcePath || parsedRequest.resourcePath
+        const parsedRequest = parseRequest(loaderContext.resource)
+        const parsedQueryObj = parsedRequest.queryObj
+        const originResourcePath = parsedQueryObj.originResourcePath || parsedRequest.resourcePath
         const opts = { src, mode: localSrcMode }
         if (originResourcePath) {
           opts.addQuery = { originResourcePath }
@@ -169,5 +170,5 @@ module.exports = function (content) {
     return '" + require(' + requestString + ') + "'
   }) + ';'
 
-  callback(ret)
+  callback(null, ret)
 }

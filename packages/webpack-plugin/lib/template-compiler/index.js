@@ -22,9 +22,10 @@ module.exports = function (raw) {
   const packageName = mpx.currentPackageRoot || 'main'
   const componentsMap = mpx.componentsMap[packageName]
   const wxsContentMap = mpx.wxsConentMap
-  const parsedQueryObj = parseRequest(this.resource).queryObj
-  const resourcePath = parsedQueryObj.resourcePath
-  const originResourcePath = parsedQueryObj.originalResourcePath || resourcePath
+  const parsedRequest = parseRequest(this.resource)
+  const parsedQueryObj = parsedRequest.queryObj
+  const resourcePath = parsedRequest.resourcePath
+  const originResourcePath = parsedQueryObj.originalResourcePath
   let scopedId
 
   if (options.hasScoped) {
