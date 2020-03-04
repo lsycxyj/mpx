@@ -234,6 +234,8 @@ class MpxWebpackPlugin {
           staticResourceMap: {
             main: {}
           },
+          // for usingComponent shaking
+          usedTagMap: {},
           hasApp: false,
           // 记录静态资源首次命中的分包，当有其他分包再次引用了同样的静态资源时，对其request添加packageName query以避免模块缓存导致loader不再执行
           staticResourceHit: {},

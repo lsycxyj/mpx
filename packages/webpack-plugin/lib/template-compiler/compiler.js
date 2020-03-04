@@ -769,6 +769,10 @@ function parse (template, options) {
     stack.push(root)
   }
 
+  function callOnCloseTag (element) {
+    options.onCloseElement && options.onCloseElement(element)
+  }
+
   parseHTML(template, {
     warn: warn$1,
     expectHTML: options.expectHTML,
@@ -838,6 +842,7 @@ function parse (template, options) {
       } else {
         element.unary = true
         closeElement(element, meta)
+        callOnCloseTag(element)
       }
     },
 
@@ -853,6 +858,7 @@ function parse (template, options) {
         stack.pop()
         currentParent = stack[stack.length - 1]
         closeElement(element, meta)
+        callOnCloseTag(element)
       }
     },
 

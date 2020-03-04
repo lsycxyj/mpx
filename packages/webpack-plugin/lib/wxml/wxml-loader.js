@@ -7,6 +7,7 @@ const hash = require('hash-sum')
 const config = require('../config')
 const getMainCompilation = require('../utils/get-main-compilation')
 const createHelpers = require('../helpers')
+const parseRequest = require('../utils/parse-request')
 const isUrlRequest = require('../utils/is-url-request')
 
 function randomIdent () {
@@ -17,6 +18,7 @@ module.exports = function (content) {
   const loaderContext = this
   const isProduction = this.minimize || process.env.NODE_ENV === 'production'
   const options = loaderUtils.getOptions(this) || {}
+  const callback = this.async()
 
   const filePath = this.resourcePath
 
@@ -133,8 +135,9 @@ module.exports = function (content) {
   content = JSON.stringify(content)
 
   const exportsString = 'module.exports = '
+  const templateRequestSet = new Set()
 
-  return exportsString + content.replace(/xxxHTMLLINKxxx[0-9.]+xxx/g, function (match) {
+  const ret = exportsString + content.replace(/xxxHTMLLINKxxx[0-9.]+xxx/g, function (match) {
     if (!data[match]) return match
 
     const link = data[match]
@@ -146,7 +149,15 @@ module.exports = function (content) {
     switch (link.tag) {
       case 'import':
       case 'include':
-        requestString = getSrcRequestString('template', { src, mode: localSrcMode }, -1)
+        const parsedRequest = parseRequest(loaderContext.resource).queryObj
+        const originResourcePath = parsedRequest.originResourcePath || parsedRequest.resourcePath
+        const opts = { src, mode: localSrcMode }
+        if (originResourcePath) {
+          opts.addQuery = { originResourcePath }
+        }
+        requestString = getSrcRequestString('template', opts, -1)
+        // const rawRequest = requestString.repalce(/^"|"$/g, '')
+        // templateRequestSet.add(rawRequest)
         break
       case config[mode].wxs.tag:
         requestString = getSrcRequestString('wxs', { src, mode: localSrcMode }, -1, undefined, '!!')
@@ -157,4 +168,6 @@ module.exports = function (content) {
 
     return '" + require(' + requestString + ') + "'
   }) + ';'
+
+  callback(ret)
 }

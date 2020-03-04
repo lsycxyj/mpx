@@ -22,7 +22,9 @@ module.exports = function (raw) {
   const packageName = mpx.currentPackageRoot || 'main'
   const componentsMap = mpx.componentsMap[packageName]
   const wxsContentMap = mpx.wxsConentMap
-  const resourcePath = parseRequest(this.resource).resourcePath
+  const parsedQueryObj = parseRequest(this.resource).queryObj
+  const resourcePath = parsedQueryObj.resourcePath
+  const originResourcePath = parsedQueryObj.originalResourcePath || resourcePath
   let scopedId
 
   if (options.hasScoped) {
@@ -50,7 +52,17 @@ module.exports = function (raw) {
     isNative,
     scopedId,
     filePath: this.resourcePath,
-    i18n
+    i18n,
+    onCloseElement (element) {
+      if (originResourcePath) {
+        const stripedExtPath = originResourcePath.replace(/\.(js|mpx)$/, '')
+        let tagSet = mpx.usedTagMap[stripedExtPath]
+        if (!tagSet) {
+          mpx.usedTagMap[stripedExtPath] = tagSet = new Set()
+        }
+        tagSet.add(element.tag)
+      }
+    }
   }))
 
   let ast = parsed.root

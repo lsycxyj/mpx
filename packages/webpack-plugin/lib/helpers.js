@@ -185,9 +185,13 @@ module.exports = function createHelpers (loaderContext, options, moduleId, isPro
   function getSrcRequestString (type, impt, index = 0, scoped, prefix = '!', withIssuer) {
     let loaderString = type === 'script' ? '' : prefix + getLoaderString(type, impt, index, scoped, withIssuer)
     let src = impt.src
+    let query = processQuery(src, impt.mode, type)
+    if (impt.addQuery) {
+      query = addQuery(query, impt.addQuery)
+    }
     return loaderUtils.stringifyRequest(
       loaderContext,
-      loaderString + processQuery(src, impt.mode, type)
+      loaderString + query
     )
   }
 
